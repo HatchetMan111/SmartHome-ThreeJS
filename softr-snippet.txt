@@ -1,0 +1,83 @@
+SOFTTR-EINBINDUNG — SMART HOME 3D-SZENE
+========================================
+
+WICHTIG (häufigster Fehler):
+  https://DEIN-HOST ist ein PLATZHALTER. Solange dort keine echte URL steht,
+  bleibt der Block leer/weiß — das Script lädt einfach nicht.
+
+  Die URL braucht:
+  - ein echtes HTTPS-Zertifikat (Softr-Seiten sind HTTPS, http-Embeds werden
+    vom Browser als Mixed Content blockiert — auch http://192.168.x.x!)
+  - z. B. nginx-LXC + Let's Encrypt, Cloudflare Tunnel, GitHub Pages,
+    Cloudflare Pages …
+
+
+VARIANTE A — Standard (empfohlen)
+---------------------------------
+
+1) SOFTR → Seite → Custom Code BLOCK (dorthin ziehen, wo die Szene stehen soll):
+
+<div id="sm-scene" style="position:relative;width:100%;height:80vh;min-height:420px;border-radius:18px;overflow:hidden;background:#0d0f12;color:#e8e4da;font:14px ui-sans-serif,system-ui,sans-serif;text-align:center">
+  <div style="padding-top:38vh">3D-Szene wird geladen&nbsp;…</div>
+</div>
+
+(Der dunkle Hintergrund + Text bleibt sichtbar, bis die Szene startet — der
+Block ist also nie einfach weiß.)
+
+
+2) SOFTR → Einstellungen → Custom Code → FOOTER (nicht in den Block!):
+
+<script>
+(function () {
+  var s = document.createElement('script');
+  s.src = 'https://hatchetman111.github.io/SmartHome-ThreeJS/smarthome.js?embed=1';
+  s.defer = true;
+  document.body.appendChild(s);
+})();
+</script>
+
+Warum dieser Umweg? Softr kann Block-Inhalte dynamisch ins DOM einfügen —
+dabei würden normale <script src>-Tags im Block teils NICHT ausgeführt.
+Das dynamische Nachladen per kleinem Inline-Script funktioniert immer.
+(Dein bewährtes Muster: Script-Code in den Seiten-Header/Footer, ins Block
+nur das Container-Div.)
+
+
+VARIANTE B — iFrame (Plan B, garantiert)
+-----------------------------------------
+
+Falls Custom-Code-Block + Footer bei dir zickt: Softr hat einen
+Embed/iFrame-Block. Eine Zeile, fertig:
+
+<iframe src="https://hatchetman111.github.io/SmartHome-ThreeJS/index.html?embed=1"
+        style="width:100%;height:80vh;border:0;border-radius:18px"
+        title="Smart Home 3D" loading="lazy" allowfullscreen></iframe>
+
+Dafür müssen index.html UND smarthome.js auf dem Host liegen (beide Dateien
+reichen; die Szene rendert dann im iframe fullscreen).
+
+
+PARAMETER (an die script-src bzw. iframe-src anhängen, kombinierbar)
+---------------------------------------------------------------------
+  &view=front|corner|low|aerial     Startansicht (Standard: corner)
+  &light=morning|golden|dusk|night  Startlicht (Standard: dusk)
+  &quality=fast|balanced|high       für schwache/ältere Geräte
+Beispiel: https://hatchetman111.github.io/SmartHome-ThreeJS/smarthome.js?embed=1&view=aerial&light=night
+
+
+CHECKLISTE, WENN DER BLOCK LEER BLEIBT
+---------------------------------------
+  1. Steht noch „DEIN-HOST" im Code? → echte URL einsetzen.
+  2. Öffne https://hatchetman111.github.io/SmartHome-ThreeJS/smarthome.js direkt im Browser:
+     Muss als JS-Text antworten (beginnt mit Minified-Code), sonst Host-Fix.
+  3. Ist die URL https (nicht http)? Softr-Seiten blocken http-Scripte.
+  4. Browser-Konsole (F12) auf Fehler prüfen:
+     „Mixed Content" → HTTPS-Problem; „404" → Pfad falsch.
+  5. Script wirklich im FOOTER-Custom-Code, nicht im Block (Variante A.2).
+  6. ID „sm-scene" nur EINMAL pro Seite verwenden.
+
+
+LOKAL TESTEN (ohne Host)
+-------------------------
+  python3 -m http.server 8766 --directory /home/phil/LichtValley.ZAI/smarthome-3d
+  → http://127.0.0.1:8766/softr-embed.html   (lädt relativ, zeigt sofort die Szene)
